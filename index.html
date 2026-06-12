@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام إدارة هيئة التدريس | المعهد العالي للهندسة والتكنولوجيا</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Global Typography & Background */
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+            min-height: 100vh;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+            padding-bottom: 40px; 
+            overflow-x: hidden;
+        }
+
+        /* Enforce Bold Everywhere for Headings and Tables */
+        h1, h2, h3, h4, th, td, p, span, div {
+            font-weight: 700 !important;
+        }
+
+        /* Aero Glass UI Elements */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Animated Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 12px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1.05rem;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
+            background-size: 300% 300%;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+
+        .btn-accept {
+            background-image: linear-gradient(45deg, #2196F3, #4CAF50, #2196F3);
+            animation: gradientMove 4s ease infinite;
+        }
+
+        .btn-cancel {
+            background-image: linear-gradient(45deg, #F44336, #E91E63, #F44336);
+            animation: gradientMove 4s ease infinite;
+        }
+        
+        .btn-outline-blue {
+            background: white;
+            color: #2563eb;
+            border: 2px solid #bfdbfe;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-outline-blue:hover {
+            background: #eff6ff;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-green {
+            background: white;
+            color: #16a34a;
+            border: 2px solid #bbf7d0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-outline-green:hover {
+            background: #f0fdf4;
+            transform: translateY(-2px);
+        }
+
+        /* Animations */
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .emoji-anim {
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        .btn:hover .emoji-anim {
+            transform: translateY(-3px) scale(1.2);
+        }
+
+        /* Input Styling */
+        input[type="text"], input[type="number"], select {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            width: 100%;
+            font-size: 1.1rem;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .table-input {
+            padding: 6px !important;
+            width: 80px !important;
+            text-align: center;
+            background: white !important;
+            border: 1px solid #d1d5db !important;
+        }
+        .table-input:disabled {
+            background: #f3f4f6 !important;
+            opacity: 0.6;
+        }
+
+        /* Table Styling */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        th { background: rgba(255,255,255,0.5); }
+
+        /* Custom Calendar Grid Styling */
+        .cal-day {
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; z-index: 2000;
+            opacity: 0; visibility: hidden; transition: all 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: white; border-radius: 16px; width: 90%; max-width: 500px;
+            padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: scale(0.95); transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        
+        /* Animated Progress Footer */
+        .custom-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+            z-index: 1000;
+            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+            background-size: 200% 100%;
+            animation: scrollGradient 5s linear infinite;
+        }
+
+        @keyframes scrollGradient {
+            0% { background-position: 100% 0; }
+            100% { background-position: 0 0; }
+        }
+
+        /* -----------------------------------------
+           PRINT SPECIFIC STYLES (Optimized for One Page & Batch) 
+           ----------------------------------------- */
+        @media print {
+            @page { size: A4; margin: 5mm; }
+            body { background: white !important; padding: 0 !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            /* FORCE BOLD IN PRINT */
+            * { font-weight: 700 !important; }
+            
+            .no-print, .custom-footer { display: none !important; }
+            .glass-panel { background: white !important; border: none !important; box-shadow: none !important; filter: none !important; padding: 0 !important; }
+            .print-container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            
+            /* Ensure Batch Pages break properly */
+            .print-page { page-break-after: always; break-after: page; }
+            .print-page:last-child { page-break-after: auto; break-after: auto; }
+            
+            #printableAreaContainer { min-height: auto !important; border: none !important; padding: 0 !important; }
+            table, th, td { border: 1px solid black !important; padding: 3px 6px !important; text-align: center !important; font-size: 13px !important; }
+            h2 { font-size: 17px !important; margin-bottom: 4px !important; }
+            h3 { font-size: 14px !important; margin-bottom: 2px !important; }
+            p { font-size: 12px !important; margin-bottom: 2px !important; }
+            .mb-6 { margin-bottom: 6px !important; }
+            .mb-8 { margin-bottom: 8px !important; }
+            .mb-4 { margin-bottom: 4px !important; }
+            .mb-2 { margin-bottom: 2px !important; }
+            .mt-12, .mt-8, .mt-6 { margin-top: 10px !important; }
+            .pt-8, .pt-4 { padding-top: 4px !important; }
+            .pb-4 { padding-bottom: 4px !important; }
+            .header-logo { height: 50px !important; }
+        }
+
+        .view-section { display: none; animation: fadeIn 0.4s ease-out; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="p-4 md:p-8" onclick="closeCalendarOnOutsideClick(event)">
+
+    <input type="file" id="importExcelBtn" accept=".xlsx, .xls" class="hidden" onchange="handleExcelImport(event)">
+
+    <div id="view-dashboard" class="view-section active max-w-6xl mx-auto">
+        <div class="glass-panel p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <h2 class="text-2xl text-blue-900 w-full md:w-auto">قائمة السجلات <span class="emoji-anim">📂</span></h2>
+            
+            <div class="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
+                <button onclick="openTitleModal()" class="btn btn-outline-blue bg-white"><span class="emoji-anim">📅</span> تحديد الشهر</button>
+                <button onclick="openSigsModal()" class="btn btn-outline-blue bg-white"><span class="emoji-anim">✍️</span> التوقيعات</button>
+                <button onclick="document.getElementById('importExcelBtn').click()" class="btn btn-accept !bg-blue-600"><span class="emoji-anim">📥</span> استيراد</button>
+                <button onclick="exportAllExcel()" class="btn btn-accept !bg-green-600"><span class="emoji-anim">📤</span> تصدير</button>
+                <button onclick="printAllReports()" class="btn btn-accept !bg-purple-600"><span class="emoji-anim">🖨️</span> طباعة الكل (PDF)</button>
+                <button onclick="openForm()" class="btn btn-accept"><span class="emoji-anim">➕</span> إضافة جديد</button>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 overflow-x-auto">
+            <table id="recordsTable">
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>الدرجة</th>
+                        <th>القسم</th>
+                        <th>جهة الانتداب</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsBody"></tbody>
+            </table>
+            <div id="emptyDataMsg" class="text-center py-8 text-gray-500">
+                لا توجد سجلات حالياً. ابدأ باستيراد ملف Excel أو إضافة عضو جديد.
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-title" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl text-blue-900 mb-6 font-bold text-center">تحديد الشهر (عنوان التقرير)</h2>
+            <div class="mb-4">
+                <label class="block mb-2 font-bold text-gray-700">عنوان التقرير</label>
+                <input type="text" id="set_reportTitle" placeholder="مثال: استمارة شهر مارس ٢٠٢٥-٢٠٢٦م">
+                <p class="text-sm text-gray-500 mt-2 text-center">اترك الحقل فارغاً للعودة للعنوان الافتراضي التلقائي.</p>
+            </div>
+            <div class="flex justify-between items-center mt-8 pt-4 border-t">
+                <button onclick="saveTitleSettings()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition">حفظ التغييرات</button>
+                <button onclick="closeModals()" class="text-gray-500 hover:text-gray-800 font-bold px-4 py-2">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-sigs" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl text-blue-900 mb-6 font-bold text-center">تعديل التوقيعات</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block mb-2 font-bold text-gray-700 text-sm">اسم عميد المعهد</label>
+                    <input type="text" id="set_deanName" placeholder="الاسم (مثال: أ.د. مصطفى كامل)">
+                </div>
+                <div>
+                    <label class="block mb-2 font-bold text-gray-700 text-sm">اسم شئون هيئة التدريس</label>
+                    <input type="text" id="set_affairsName" placeholder="الاسم">
+                </div>
+                <div>
+                    <label class="block mb-2 font-bold text-gray-700 text-sm">اسم أمين المعهد</label>
+                    <input type="text" id="set_secretaryName" placeholder="الاسم">
+                </div>
+            </div>
+            <div class="flex justify-between items-center mt-8 pt-4 border-t">
+                <button onclick="saveSigsSettings()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition">حفظ التغييرات</button>
+                <button onclick="closeModals()" class="text-gray-500 hover:text-gray-800 font-bold px-4 py-2">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="view-form" class="view-section max-w-5xl mx-auto">
+        <div class="glass-panel p-6 mb-4 flex justify-between items-center">
+            <h2 class="text-2xl text-blue-900" id="formTitle">إضافة / تعديل عضو هيئة تدريس</h2>
+            <button onclick="switchView('dashboard')" class="btn btn-cancel"><span class="emoji-anim">❌</span> إلغاء</button>
+        </div>
+
+        <div class="glass-panel p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2 text-blue-900">الاسم</label>
+                    <input type="text" id="f_name" placeholder="أدخل الاسم الرباعي">
+                </div>
+                <div>
+                    <label class="block mb-2 text-blue-900">الدرجة العلمية</label>
+                    <select id="f_degree" onchange="handleDegreeChange()">
+                        <option value="أستاذ">أستاذ</option>
+                        <option value="أستاذ مساعد">أستاذ مساعد</option>
+                        <option value="مدرس">مدرس</option>
+                        <option value="مدرس مساعد">مدرس مساعد</option>
+                        <option value="معيد">معيد</option>
+                        <option value="مهندس حر">مهندس حر</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-blue-900">القسم</label>
+                    <select id="f_dept">
+                        <option value="العلوم الاساسية">العلوم الاساسية</option>
+                        <option value="قسم الهندسة المدنية">قسم الهندسة المدنية</option>
+                        <option value="قسم الهندسة المعمارية">قسم الهندسة المعمارية</option>
+                        <option value="قسم الهندسة الكهربية">قسم الهندسة الكهربية</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-blue-900">جهة العمل / الانتداب</label>
+                    <input type="text" id="f_employer" list="employersList" placeholder="اختر من القائمة أو اكتب جهة أخرى...">
+                    <datalist id="employersList">
+                        <option value="حر">
+                        <option value="كلية الهندسة - جامعة كفر الشيخ">
+                        <option value="المعهد العالي للهندسة والتكنولوجيا - كفر الشيخ">
+                        <option value="كلية الهندسة - جامعة طنطا">
+                        <option value="المعهد العالي للهندسة والتكنولوجيا - طنطا">
+                        <option value="المعهد العالي للهندسة والتكنولوجيا - المحلة الكبرى">
+                        <option value="كلية الهندسة - جامعة المنصورة">
+                        <option value="معهد النيل العالي للهندسة والتكنولوجيا - المنصورة">
+                        <option value="معهد الدلتا العالي للهندسة والتكنولوجيا - المنصورة">
+                        <option value="كلية الهندسة - جامعة المنصورة الأهلية">
+                        <option value="كلية الهندسة - جامعة دمنهور">
+                        <option value="كلية الهندسة - جامعة المنوفية">
+                        <option value="كلية الهندسة الإلكترونية - جامعة المنوفية">
+                        <option value="المعهد العالي للهندسة والتكنولوجيا - مدينة السادات">
+                        <option value="كلية الهندسة - جامعة دمياط">
+                        <option value="المعهد العالي للهندسة والتكنولوجيا - دمياط الجديدة">
+                        <option value="كلية الهندسة - جامعة الإسكندرية">
+                        <option value="معهد الإسكندرية العالي للهندسة والتكنولوجيا - سموحة">
+                        <option value="المعهد العالي للهندسة والتكنولوجيا - برج العرب">
+                        <option value="كلية الهندسة ببنها - جامعة بنها">
+                        <option value="كلية الهندسة بشبرا - جامعة بنها">
+                        <option value="كلية الهندسة - جامعة الزقازيق">
+                        <option value="المعهد التكنولوجي العالي - العاشر من رمضان">
+                        <option value="كلية الهندسة - جامعة بورسعيد">
+                        <option value="كلية الهندسة - جامعة القاهرة">
+                        <option value="كلية الهندسة - جامعة عين شمس">
+                        <option value="كلية الهندسة بحلوان - جامعة حلوان">
+                        <option value="كلية الهندسة بالمطرية - جامعة حلوان">
+                        <option value="معهد الأهرامات العالي للهندسة والتكنولوجيا - 6 أكتوبر">
+                        <option value="المعهد العالي للهندسة - مدينة الشروق">
+                        <option value="المعهد العالي للهندسة - مدينة 15 مايو">
+                        <option value="كلية الهندسة - جامعة قناة السويس">
+                        <option value="كلية الهندسة - جامعة السويس">
+                        <option value="كلية الهندسة - جامعة الفيوم">
+                        <option value="كلية الهندسة - جامعة بني سويف">
+                        <option value="كلية الهندسة - جامعة المنيا">
+                        <option value="كلية الهندسة - جامعة أسيوط">
+                        <option value="كلية الهندسة - جامعة سوهاج">
+                        <option value="كلية الهندسة - جامعة جنوب الوادي">
+                        <option value="كلية الهندسة - جامعة أسوان">
+                        <option value="المعهد العالي للهندسة والتكنولوجيا - العريش">
+                        <option value="كلية الحاسبات والمعلومات - جامعة كفر الشيخ">
+                        <option value="كلية الذكاء الاصطناعي - جامعة كفر الشيخ">
+                        <option value="كلية الحاسبات والمعلومات - جامعة طنطا">
+                        <option value="كلية الحاسبات والمعلومات - جامعة المنصورة">
+                        <option value="كلية الحاسبات والمعلومات - جامعة دمنهور">
+                        <option value="كلية الحاسبات والمعلومات - جامعة المنوفية">
+                        <option value="كلية الحاسبات والمعلومات - جامعة دمياط">
+                        <option value="كلية الحاسبات وعلوم البيانات - جامعة الإسكندرية">
+                        <option value="كلية الحاسبات والذكاء الاصطناعي - جامعة بنها">
+                        <option value="كلية الحاسبات والمعلومات - جامعة الزقازيق">
+                        <option value="كلية الحاسبات والذكاء الاصطناعي - جامعة القاهرة">
+                        <option value="كلية الحاسبات والمعلومات - جامعة عين شمس">
+                        <option value="كلية الحاسبات والذكاء الاصطناعي - جامعة حلوان">
+                        <option value="كلية الحاسبات والمعلومات - جامعة قناة السويس">
+                        <option value="كلية الحاسبات والمعلومات - جامعة الفيوم">
+                        <option value="كلية الحاسبات والمعلومات - جامعة بني سويف">
+                        <option value="كلية الحاسبات والمعلومات - جامعة المنيا">
+                        <option value="كلية الحاسبات والمعلومات - جامعة أسيوط">
+                        <option value="كلية العلوم - جامعة كفر الشيخ">
+                        <option value="معهد علوم وتكنولوجيا النانو - جامعة كفر الشيخ">
+                        <option value="المعهد العالي للإدارة وتكنولوجيا المعلومات - كفر الشيخ">
+                        <option value="كلية العلوم - جامعة طنطا">
+                        <option value="كلية العلوم - جامعة المنصورة">
+                        <option value="كلية العلوم - جامعة دمنهور">
+                        <option value="كلية العلوم - جامعة المنوفية">
+                        <option value="كلية العلوم - جامعة دمياط">
+                        <option value="كلية العلوم - جامعة الإسكندرية">
+                        <option value="كلية العلوم - جامعة بنها">
+                        <option value="كلية العلوم - جامعة الزقازيق">
+                        <option value="كلية العلوم - جامعة بورسعيد">
+                        <option value="كلية العلوم - جامعة القاهرة">
+                        <option value="كلية العلوم - جامعة عين شمس">
+                        <option value="كلية العلوم - جامعة حلوان">
+                        <option value="كلية العلوم - جامعة قناة السويس">
+                        <option value="كلية العلوم - جامعة السويس">
+                        <option value="كلية العلوم - جامعة الفيوم">
+                        <option value="كلية العلوم - جامعة بني سويف">
+                        <option value="كلية العلوم - جامعة المنيا">
+                        <option value="كلية العلوم - جامعة أسيوط">
+                        <option value="كلية العلوم - جامعة سوهاج">
+                        <option value="كلية العلوم - جامعة جنوب الوادي">
+                        <option value="كلية العلوم - جامعة أسوان">
+                        <option value="كلية التربية- جامعة كفر الشيخ">
+                    </datalist>
+                </div>
+            </div>
+
+            <div class="mt-8 border-t border-gray-300 pt-6">
+                <h3 class="text-xl mb-4 text-blue-900">توزيع الساعات الأسبوعية <span class="emoji-anim">📅</span></h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-center">
+                        <thead>
+                            <tr>
+                                <th>اليوم</th>
+                                <th>تفعيل</th>
+                                <th>ساعات نظري</th>
+                                <th>ساعات عملي/إشراف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-8 border-t border-gray-300 pt-6">
+                <h3 class="text-xl mb-4 text-blue-900">تواريخ الحضور الفعلي <span class="emoji-anim">✅</span></h3>
+                <div class="relative mb-6 cal-container inline-block">
+                    <button type="button" onclick="toggleCalendar('main')" class="btn btn-outline-blue text-lg px-6 py-2 rounded-lg">
+                        <span class="emoji-anim">📅</span> اختر تواريخ الحضور
+                    </button>
+                    <div id="calMain" class="hidden absolute top-full mt-2 right-0 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-5 w-[350px]">
+                        <div class="flex justify-between items-center mb-6">
+                            <button type="button" onclick="changeMonth('main', -1)" class="text-blue-500 hover:bg-blue-100 p-2 rounded-full font-bold transition">❮</button>
+                            <div id="calMonthYearMain" class="font-bold text-lg text-gray-800"></div>
+                            <button type="button" onclick="changeMonth('main', 1)" class="text-blue-500 hover:bg-blue-100 p-2 rounded-full font-bold transition">❯</button>
+                        </div>
+                        <div class="grid grid-cols-7 gap-1 text-center text-sm font-bold text-blue-400 mb-3 border-b pb-2">
+                            <div>السبت</div><div>الأحد</div><div>الاثنين</div><div>الثلاثاء</div><div>الأربعاء</div><div>الخميس</div><div>الجمعة</div>
+                        </div>
+                        <div id="calGridMain" class="grid grid-cols-7 gap-2 text-center text-[15px] font-bold"></div>
+                        <div class="mt-4 text-center border-t pt-3">
+                            <button type="button" onclick="toggleCalendar('main')" class="text-sm font-bold text-blue-600 hover:text-blue-800">إغلاق</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="calErrorMain" class="hidden text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg mb-4 font-bold text-md w-full md:w-1/2"></div>
+            </div>
+
+            <div class="mt-4 border-t border-gray-200 pt-6">
+                <h3 class="text-xl mb-4 text-green-700">تواريخ إضافية <span class="emoji-anim">🌟</span></h3>
+                <div class="relative mb-6 cal-container inline-block">
+                    <button type="button" onclick="toggleCalendar('add')" class="btn btn-outline-green text-lg px-6 py-2 rounded-lg">
+                        <span class="emoji-anim">📅</span> اختر تواريخ إضافية
+                    </button>
+                    <div id="calAdd" class="hidden absolute top-full mt-2 right-0 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-5 w-[350px]">
+                        <div class="flex justify-between items-center mb-6">
+                            <button type="button" onclick="changeMonth('add', -1)" class="text-green-500 hover:bg-green-100 p-2 rounded-full font-bold transition">❮</button>
+                            <div id="calMonthYearAdd" class="font-bold text-lg text-gray-800"></div>
+                            <button type="button" onclick="changeMonth('add', 1)" class="text-green-500 hover:bg-green-100 p-2 rounded-full font-bold transition">❯</button>
+                        </div>
+                        <div class="grid grid-cols-7 gap-1 text-center text-sm font-bold text-green-500 mb-3 border-b pb-2">
+                            <div>السبت</div><div>الأحد</div><div>الاثنين</div><div>الثلاثاء</div><div>الأربعاء</div><div>الخميس</div><div>الجمعة</div>
+                        </div>
+                        <div id="calGridAdd" class="grid grid-cols-7 gap-2 text-center text-[15px] font-bold"></div>
+                        <div class="mt-4 text-center border-t pt-3">
+                            <button type="button" onclick="toggleCalendar('add')" class="text-sm font-bold text-green-600 hover:text-green-800">إغلاق</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-white bg-opacity-70 rounded-xl p-4 shadow-sm border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">جدول الحضور الفعلي والإضافي (مرتب زمنياً)</h3>
+                <div id="emptyDatesMsg" class="text-gray-500 text-center py-4">لم يتم إضافة تواريخ بعد</div>
+                <div class="overflow-x-auto">
+                    <table id="previewTable" class="w-full text-center hidden">
+                        <thead class="bg-blue-50">
+                            <tr>
+                                <th>م</th>
+                                <th>التاريخ</th>
+                                <th>اليوم</th>
+                                <th>نوع الحضور</th>
+                                <th>ساعات نظري</th>
+                                <th>ساعات عملي/إشراف</th>
+                                <th>حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="text-center mt-8 pt-6 border-t border-gray-300">
+                <button onclick="saveRecord()" class="btn btn-accept w-full md:w-auto text-xl px-12">
+                    <span class="emoji-anim">💾</span> حفظ البيانات
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-report" class="view-section print-container glass-panel p-8 mx-auto max-w-4xl">
+        <div class="no-print flex justify-between mb-4">
+            <button onclick="switchView('dashboard')" class="btn btn-cancel"><span class="emoji-anim">⬅️</span> رجوع</button>
+            <div class="flex gap-2">
+                <button onclick="window.print()" class="btn btn-accept"><span class="emoji-anim">🖨️</span> طباعة (A4)</button>
+            </div>
+        </div>
+
+        <div id="printableAreaContainer" class="bg-transparent">
+            </div>
+    </div>
+
+    <div class="custom-footer no-print">
+        All rights are reserved to Dr. Mazen Badawy – Doctor of English Teaching & Testing
+    </div>
+
+    <script>
+        // --- Core Utility: Format Date to DD-MM-YYYY ---
+        function formatDateToDDMMYYYY(dateString) {
+            if (!dateString) return '';
+            const parts = dateString.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            return dateString;
+        }
+
+        // --- Core Utility: Hindi Numbers Converter ---
+        const convertToHindi = (str) => {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+        };
+
+        // --- Database & Global State Management (Memory Only, Starts Blank) ---
+        let records = []; 
+        let globalSettings = {
+            reportTitle: "",
+            deanName: "أ.د. مصطفى كامل",
+            affairsName: "",
+            secretaryName: ""
+        };
+
+        let currentEditingId = null;
+        let activeDates = []; 
+        let activeAdditionalDates = {}; 
+        let currentCalDateMain = new Date();
+        let currentCalDateAdd = new Date();
+        
+        const daysOfWeek = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const targetDays = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+
+        window.onload = () => { renderTable(); };
+
+        // --- UI Navigation & Modals ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${viewId}`).classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function openTitleModal() {
+            document.getElementById('modal-title').classList.add('active');
+            document.getElementById('set_reportTitle').value = globalSettings.reportTitle || '';
+        }
+
+        function openSigsModal() {
+            document.getElementById('modal-sigs').classList.add('active');
+            document.getElementById('set_deanName').value = globalSettings.deanName || '';
+            document.getElementById('set_affairsName').value = globalSettings.affairsName || '';
+            document.getElementById('set_secretaryName').value = globalSettings.secretaryName || '';
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal-overlay').forEach(el => el.classList.remove('active'));
+        }
+
+        function saveTitleSettings() {
+            globalSettings.reportTitle = document.getElementById('set_reportTitle').value.trim();
+            closeModals();
+        }
+
+        function saveSigsSettings() {
+            globalSettings.deanName = document.getElementById('set_deanName').value.trim() || 'أ.د. مصطفى كامل';
+            globalSettings.affairsName = document.getElementById('set_affairsName').value.trim();
+            globalSettings.secretaryName = document.getElementById('set_secretaryName').value.trim();
+            closeModals();
+        }
+
+        // --- Dashboard Logic ---
+        function renderTable() {
+            const tbody = document.getElementById('recordsBody');
+            const msg = document.getElementById('emptyDataMsg');
+            tbody.innerHTML = '';
+            
+            if (records.length === 0) {
+                msg.classList.remove('hidden');
+                document.getElementById('recordsTable').classList.add('hidden');
+            } else {
+                msg.classList.add('hidden');
+                document.getElementById('recordsTable').classList.remove('hidden');
+                
+                records.forEach(rec => {
+                    tbody.innerHTML += `
+                        <tr class="bg-white bg-opacity-40 hover:bg-opacity-60 transition">
+                            <td class="font-bold">${convertToHindi(rec.name)}</td>
+                            <td>${convertToHindi(rec.degree)}</td>
+                            <td>${convertToHindi(rec.dept)}</td>
+                            <td>${convertToHindi(rec.employer)}</td>
+                            <td class="flex gap-2 justify-end">
+                                <button onclick="viewReport('${rec.id}')" class="btn btn-accept !p-2 !text-sm"><span class="emoji-anim">📄</span> عرض</button>
+                                <button onclick="editRecord('${rec.id}')" class="btn btn-accept !p-2 !text-sm !bg-blue-500"><span class="emoji-anim">✏️</span> تعديل</button>
+                                <button onclick="deleteRecord('${rec.id}')" class="btn btn-cancel !p-2 !text-sm"><span class="emoji-anim">🗑️</span> حذف</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        // --- Form Planner Logic ---
+        function initScheduleTable() {
+            const tbody = document.getElementById('scheduleBody');
+            tbody.innerHTML = '';
+            targetDays.forEach(day => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="font-bold">${day}</td>
+                        <td><input type="checkbox" id="chk_${day}" class="w-6 h-6 cursor-pointer" onchange="toggleDayInputs('${day}')"></td>
+                        <td><input type="number" id="theo_${day}" min="0" value="0" disabled class="w-20 text-center mx-auto opacity-50 bg-gray-100" oninput="renderPreviewTable()"></td>
+                        <td><input type="number" id="prac_${day}" min="0" value="0" disabled class="w-20 text-center mx-auto opacity-50 bg-gray-100" oninput="renderPreviewTable()"></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function isTheoRestricted() {
+            const degree = document.getElementById('f_degree').value;
+            return ['مدرس مساعد', 'معيد', 'مهندس حر'].includes(degree);
+        }
+
+        function toggleDayInputs(day) {
+            const isChecked = document.getElementById(`chk_${day}`).checked;
+            const pracInput = document.getElementById(`prac_${day}`);
+            
+            pracInput.disabled = !isChecked;
+            pracInput.style.opacity = isChecked ? "1" : "0.5";
+            pracInput.style.backgroundColor = isChecked ? "white" : "#f3f4f6";
+            
+            handleDegreeChange(); 
+            if(!document.getElementById('calMain').classList.contains('hidden')) renderCalendar('main'); 
+            renderPreviewTable();
+        }
+
+        function handleDegreeChange() {
+            const restricted = isTheoRestricted();
+            
+            targetDays.forEach(day => {
+                const isChecked = document.getElementById(`chk_${day}`).checked;
+                const theoInput = document.getElementById(`theo_${day}`);
+                
+                if (isChecked && !restricted) {
+                    theoInput.disabled = false;
+                    theoInput.style.opacity = "1";
+                    theoInput.style.backgroundColor = "white";
+                } else {
+                    theoInput.disabled = true;
+                    theoInput.style.opacity = "0.5";
+                    theoInput.style.backgroundColor = "#f3f4f6";
+                    theoInput.value = "0"; 
+                }
+            });
+            renderPreviewTable(); 
+        }
+
+        function openForm() {
+            currentEditingId = null;
+            document.getElementById('formTitle').innerText = 'إضافة عضو هيئة تدريس جديد';
+            document.getElementById('f_name').value = '';
+            document.getElementById('f_dept').value = 'العلوم الاساسية';
+            document.getElementById('f_employer').value = '';
+            document.getElementById('f_degree').value = 'مدرس';
+            activeDates = [];
+            activeAdditionalDates = {};
+            currentCalDateMain = new Date(); 
+            currentCalDateAdd = new Date();
+            initScheduleTable();
+            renderPreviewTable();
+            handleDegreeChange();
+            switchView('form');
+        }
+
+        function editRecord(id) {
+            currentEditingId = id;
+            const rec = records.find(r => r.id === id);
+            document.getElementById('formTitle').innerText = 'تعديل بيانات عضو هيئة التدريس';
+            document.getElementById('f_name').value = rec.name;
+            document.getElementById('f_dept').value = rec.dept;
+            document.getElementById('f_employer').value = rec.employer;
+            document.getElementById('f_degree').value = rec.degree;
+            
+            initScheduleTable();
+            rec.schedule.forEach(s => {
+                document.getElementById(`chk_${s.day}`).checked = true;
+                document.getElementById(`theo_${s.day}`).value = s.theo;
+                document.getElementById(`prac_${s.day}`).value = s.prac;
+                toggleDayInputs(s.day);
+            });
+            
+            activeDates = rec.dates || [];
+            activeAdditionalDates = rec.additionalDates || {};
+            currentCalDateMain = new Date();
+            currentCalDateAdd = new Date();
+            handleDegreeChange();
+            renderPreviewTable();
+            switchView('form');
+        }
+
+        // --- Multi-Calendar Logic ---
+        function closeCalendarOnOutsideClick(event) {
+            if (event.target.closest('.modal-overlay') || event.target.closest('.modal-content')) return;
+
+            if (!document.contains(event.target)) return;
+            if (!event.target.closest('.cal-container')) {
+                document.getElementById('calMain').classList.add('hidden');
+                document.getElementById('calAdd').classList.add('hidden');
+            }
+        }
+
+        function toggleCalendar(type) {
+            const calId = type === 'main' ? 'calMain' : 'calAdd';
+            const cal = document.getElementById(calId);
+            
+            const otherCalId = type === 'main' ? 'calAdd' : 'calMain';
+            document.getElementById(otherCalId).classList.add('hidden');
+            
+            cal.classList.toggle('hidden');
+            if (!cal.classList.contains('hidden')) {
+                renderCalendar(type);
+            }
+        }
+
+        function changeMonth(type, direction) {
+            if (type === 'main') {
+                currentCalDateMain.setMonth(currentCalDateMain.getMonth() + direction);
+            } else {
+                currentCalDateAdd.setMonth(currentCalDateAdd.getMonth() + direction);
+            }
+            renderCalendar(type);
+        }
+
+        function renderCalendar(type) {
+            const dateObjRef = type === 'main' ? currentCalDateMain : currentCalDateAdd;
+            const year = dateObjRef.getFullYear();
+            const month = dateObjRef.getMonth();
+            
+            const arMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+            
+            const titleId = type === 'main' ? 'calMonthYearMain' : 'calMonthYearAdd';
+            document.getElementById(titleId).innerText = `${arMonths[month]} ${convertToHindi(year)}`;
+            
+            const jsDayToGridCol = {6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6};
+            const firstDayJS = new Date(year, month, 1).getDay();
+            const startEmptySlots = jsDayToGridCol[firstDayJS];
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            const gridId = type === 'main' ? 'calGridMain' : 'calGridAdd';
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = '';
+            
+            for(let i = 0; i < startEmptySlots; i++) grid.innerHTML += `<div class="cal-day"></div>`;
+            
+            for(let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const arabicDayNum = convertToHindi(d);
+                
+                let baseClass = "cal-day cursor-pointer font-bold ";
+                let clickEvent = `onclick="selectDate('${type}', '${dateStr}')"`;
+
+                if (type === 'main') {
+                    const jsDayName = daysOfWeek[new Date(year, month, d).getDay()];
+                    const chk = document.getElementById(`chk_${jsDayName}`);
+                    const isDayActive = chk && chk.checked;
+                    
+                    if (!isDayActive) {
+                        baseClass += "text-gray-300 pointer-events-auto cursor-not-allowed opacity-50 ";
+                        clickEvent = `onclick="showCalError('${jsDayName}')"`;
+                    } else {
+                        baseClass += "text-gray-700 hover:bg-blue-100 ";
+                        if (activeDates.includes(dateStr)) {
+                            baseClass += "bg-blue-600 !text-white !opacity-100 shadow-md transform scale-110 ";
+                        }
+                    }
+                } else {
+                    baseClass += "text-gray-700 hover:bg-green-100 ";
+                    if (activeAdditionalDates[dateStr]) {
+                        baseClass += "bg-green-500 !text-white !opacity-100 shadow-md transform scale-110 ";
+                    }
+                }
+
+                grid.innerHTML += `<div class="${baseClass}" ${clickEvent}>${arabicDayNum}</div>`;
+            }
+        }
+
+        function showCalError(dayName) {
+            const errBox = document.getElementById('calErrorMain');
+            errBox.innerText = `عذراً، يوم ${dayName} غير مدرج في جدول الساعات الأسبوعية لهذا العضو.`;
+            errBox.classList.remove('hidden');
+            setTimeout(() => { errBox.classList.add('hidden'); }, 4000);
+        }
+
+        function selectDate(type, dateStr) {
+            if (type === 'main') {
+                if (!activeDates.includes(dateStr)) activeDates.push(dateStr);
+                else activeDates = activeDates.filter(d => d !== dateStr);
+            } else {
+                if (!activeAdditionalDates[dateStr]) {
+                    activeAdditionalDates[dateStr] = { theo: 0, prac: 0 };
+                } else {
+                    delete activeAdditionalDates[dateStr];
+                }
+            }
+            renderCalendar(type); 
+            renderPreviewTable();
+        }
+
+        function removeDate(type, dateStr) {
+            if (type === 'main') {
+                activeDates = activeDates.filter(d => d !== dateStr);
+                if(!document.getElementById('calMain').classList.contains('hidden')) renderCalendar('main');
+            } else {
+                delete activeAdditionalDates[dateStr];
+                if(!document.getElementById('calAdd').classList.contains('hidden')) renderCalendar('add');
+            }
+            renderPreviewTable();
+        }
+
+        function updateAdditionalHour(dateStr, field, value) {
+            if(activeAdditionalDates[dateStr]) {
+                activeAdditionalDates[dateStr][field] = parseInt(value) || 0;
+            }
+        }
+
+        function renderPreviewTable() {
+            const container = document.getElementById('previewTable');
+            const msg = document.getElementById('emptyDatesMsg');
+            const tbody = document.getElementById('previewBody');
+            
+            const totalDates = activeDates.length + Object.keys(activeAdditionalDates).length;
+            
+            if (totalDates === 0) {
+                msg.style.display = 'block';
+                container.classList.add('hidden');
+                return;
+            }
+            
+            msg.style.display = 'none';
+            container.classList.remove('hidden');
+            
+            let combined = [];
+            
+            activeDates.forEach(d => {
+                const dayName = daysOfWeek[new Date(d).getDay()];
+                const t = document.getElementById(`theo_${dayName}`);
+                const p = document.getElementById(`prac_${dayName}`);
+                combined.push({ type: 'main', date: d, day: dayName, theo: t ? t.value : 0, prac: p ? p.value : 0 });
+            });
+            
+            Object.keys(activeAdditionalDates).forEach(d => {
+                const dayName = daysOfWeek[new Date(d).getDay()];
+                combined.push({ type: 'add', date: d, day: dayName, theo: activeAdditionalDates[d].theo, prac: activeAdditionalDates[d].prac });
+            });
+            
+            combined.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            const restricted = isTheoRestricted();
+            tbody.innerHTML = combined.map((item, index) => {
+                const arDate = convertToHindi(formatDateToDDMMYYYY(item.date));
+                const isAdd = item.type === 'add';
+                const rowClass = isAdd ? "bg-green-50" : "bg-white";
+                const typeLabel = isAdd ? "<span class='text-xs font-bold bg-green-500 text-white px-2 py-1 rounded'>إضافي</span>" : "<span class='font-bold text-gray-700'>أساسي</span>";
+                
+                let theoCell, pracCell;
+                if (!isAdd) {
+                    theoCell = `<span class="font-bold text-lg">${convertToHindi(item.theo)}</span>`;
+                    pracCell = `<span class="font-bold text-lg">${convertToHindi(item.prac)}</span>`;
+                } else {
+                    const theoDisabled = restricted ? "disabled" : "";
+                    const theoVal = restricted ? 0 : item.theo;
+                    theoCell = `<input type="number" min="0" value="${theoVal}" ${theoDisabled} class="table-input rounded font-bold" onchange="updateAdditionalHour('${item.date}', 'theo', this.value)">`;
+                    pracCell = `<input type="number" min="0" value="${item.prac}" class="table-input rounded font-bold" onchange="updateAdditionalHour('${item.date}', 'prac', this.value)">`;
+                }
+
+                return `
+                <tr class="${rowClass}">
+                    <td class="font-bold">${convertToHindi(index + 1)}</td>
+                    <td class="font-bold text-blue-900" style="direction:ltr;">${arDate}</td>
+                    <td class="font-bold">${item.day}</td>
+                    <td>${typeLabel}</td>
+                    <td>${theoCell}</td>
+                    <td>${pracCell}</td>
+                    <td>
+                        <button type="button" class="text-red-500 hover:text-red-700 bg-red-100 p-2 rounded-full leading-none" onclick="removeDate('${item.type}', '${item.date}')">❌</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function saveRecord() {
+            const schedule = [];
+            targetDays.forEach(day => {
+                if (document.getElementById(`chk_${day}`).checked) {
+                    schedule.push({
+                        day,
+                        theo: parseInt(document.getElementById(`theo_${day}`).value) || 0,
+                        prac: parseInt(document.getElementById(`prac_${day}`).value) || 0
+                    });
+                }
+            });
+
+            const newRecord = {
+                id: currentEditingId || Date.now().toString(),
+                name: document.getElementById('f_name').value,
+                degree: document.getElementById('f_degree').value,
+                dept: document.getElementById('f_dept').value,
+                employer: document.getElementById('f_employer').value,
+                schedule: schedule,
+                dates: activeDates,
+                additionalDates: activeAdditionalDates
+            };
+
+            if (currentEditingId) {
+                const idx = records.findIndex(r => r.id === currentEditingId);
+                records[idx] = newRecord;
+            } else {
+                records.push(newRecord);
+            }
+
+            switchView('dashboard');
+            renderTable();
+        }
+
+        function deleteRecord(id) {
+            if (confirm("هل أنت متأكد من حذف هذا السجل؟")) {
+                records = records.filter(r => r.id !== id);
+                renderTable();
+            }
+        }
+
+        // --- Tools ---
+        const arabicNumbersMap = {
+            0: 'صفر', 1: 'واحد', 2: 'اثنان', 3: 'ثلاثة', 4: 'أربعة', 5: 'خمسة', 
+            6: 'ستة', 7: 'سبعة', 8: 'ثمانية', 9: 'تسعة', 10: 'عشرة',
+            11: 'أحد عشر', 12: 'اثنا عشر', 13: 'ثلاثة عشر', 14: 'أربعة عشر', 15: 'خمسة عشر',
+            16: 'ستة عشر', 17: 'سبعة عشر', 18: 'ثمانية عشر', 19: 'تسعة عشر', 20: 'عشرون',
+            24: 'أربعة وعشرون', 30: 'ثلاثون', 40: 'أربعون'
+        };
+        function spellNumber(num) { return arabicNumbersMap[num] || convertToHindi(num.toString()); }
+
+
+        // --- Modular Report Generator (For Single or Batch Print) ---
+        function generateReportHTML(rec) {
+            let rMainTitle = "استمارة شهر";
+            let rMonthYear = convertToHindi(new Date().toLocaleString('ar-EG', { month: 'long', year: 'numeric' }));
+            
+            if (globalSettings.reportTitle && globalSettings.reportTitle.trim() !== '') {
+                rMainTitle = convertToHindi(globalSettings.reportTitle);
+                rMonthYear = ""; 
+            }
+            
+            const sigAffairs = convertToHindi(globalSettings.affairsName) || '...............................';
+            const sigSecretary = convertToHindi(globalSettings.secretaryName) || '...............................';
+            const sigDean = convertToHindi(globalSettings.deanName) || 'أ.د. مصطفى كامل';
+
+            const isAssistant = ['معيد', 'مدرس مساعد'].includes(rec.degree);
+            const rSectionTitle = isAssistant ? "بيانات عضو الهيئة المعاونة" : "بيانات عضو هيئة التدريس";
+
+            let tTheoW = 0, tPracW = 0;
+            let sBody = '';
+            rec.schedule.forEach(s => {
+                sBody += `<tr><td class="border border-black p-2 font-bold">${s.day}</td><td class="border border-black p-2 font-bold">${convertToHindi(s.theo)}</td><td class="border border-black p-2 font-bold">${convertToHindi(s.prac)}</td></tr>`;
+                tTheoW += s.theo;
+                tPracW += s.prac;
+            });
+
+            let combined = [];
+            (rec.dates || []).forEach(d => {
+                const dayName = daysOfWeek[new Date(d).getDay()];
+                const sched = rec.schedule.find(s => s.day === dayName) || { theo: 0, prac: 0 };
+                combined.push({ date: d, day: dayName, theo: sched.theo, prac: sched.prac, note: '' });
+            });
+            const addDatesObj = rec.additionalDates || {};
+            Object.keys(addDatesObj).forEach(d => {
+                const dayName = daysOfWeek[new Date(d).getDay()];
+                combined.push({ date: d, day: dayName, theo: addDatesObj[d].theo, prac: addDatesObj[d].prac, note: 'إضافي' });
+            });
+            combined.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            let tTheoM = 0, tPracM = 0;
+            let aBody = '';
+            combined.forEach((item, idx) => {
+                const arDate = convertToHindi(formatDateToDDMMYYYY(item.date));
+                aBody += `
+                    <tr>
+                        <td class="border border-black p-2 font-bold">${convertToHindi(idx + 1)}</td>
+                        <td class="border border-black p-2 font-bold" style="direction:ltr;">${arDate}</td>
+                        <td class="border border-black p-2 font-bold">${item.day}</td>
+                        <td class="border border-black p-2 font-bold">${convertToHindi(item.theo)}</td>
+                        <td class="border border-black p-2 font-bold">${convertToHindi(item.prac)}</td>
+                        <td class="border border-black p-2 text-xs text-gray-700 font-bold">${item.note}</td>
+                    </tr>`;
+                tTheoM += item.theo;
+                tPracM += item.prac;
+            });
+
+            return `
+                <div class="print-page bg-white text-black p-4 md:p-8 border border-gray-200 mb-8 min-h-[297mm]">
+                    
+                    <div class="flex justify-between items-start border-b-2 border-black pb-2 mb-4">
+                        <div class="text-center w-1/4 pt-1">
+                            <img src="Logo-minis.png" alt="Ministry Logo" class="header-logo h-16 mx-auto object-contain block">
+                            <p class="text-[11px] font-bold mt-1 leading-tight text-black">وزارة التعليم العالي<br>والبحث العلمي</p>
+                        </div>
+                        <div class="text-center w-2/4 pt-4">
+                            <h2 class="text-xl font-bold text-black">${rMainTitle}</h2>
+                            ${rMonthYear ? `<h3 class="text-md font-bold text-black">${rMonthYear}</h3>` : ''}
+                        </div>
+                        <div class="text-center w-1/4 pt-1">
+                            <img src="Logo-insit.jpg" alt="Institute Logo" class="header-logo h-16 mx-auto object-contain block">
+                            <p class="text-[11px] font-bold mt-1 leading-tight text-black">المعهد العالي للهندسة<br>والتكنولوجيا بكفر الشيخ</p>
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg mb-2 font-bold bg-gray-200 p-1 text-center text-black">${rSectionTitle}</h3>
+                    <table class="mb-4 text-center w-full border-collapse">
+                        <tr>
+                            <td class="w-1/6 font-bold bg-gray-50 border border-black p-2">الاسم</td>
+                            <td class="w-2/6 font-bold text-black border border-black p-2">${convertToHindi(rec.name)}</td>
+                            <td class="w-1/6 font-bold bg-gray-50 border border-black p-2">القسم</td>
+                            <td class="w-2/6 font-bold text-black border border-black p-2">${convertToHindi(rec.dept)}</td>
+                        </tr>
+                        <tr>
+                            <td class="font-bold bg-gray-50 border border-black p-2">الدرجة</td>
+                            <td class="font-bold text-black border border-black p-2">${convertToHindi(rec.degree)}</td>
+                            <td class="font-bold bg-gray-50 border border-black p-2">جهة الانتداب</td>
+                            <td class="font-bold text-black border border-black p-2">${convertToHindi(rec.employer)}</td>
+                        </tr>
+                    </table>
+
+                    <h3 class="text-lg mb-2 font-bold bg-gray-200 p-1 text-center text-black">توزيع الساعات اسبوعياً</h3>
+                    <table class="mb-4 text-center w-full border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-black p-2">أيام الحضور</th>
+                                <th class="border border-black p-2">نظري</th>
+                                <th class="border border-black p-2">عملي / إشراف</th>
+                            </tr>
+                        </thead>
+                        <tbody>${sBody}</tbody>
+                        <tfoot>
+                            <tr class="font-bold bg-gray-200 text-black">
+                                <td class="border border-black p-2">إجمالي الساعات الأسبوعية</td>
+                                <td class="border border-black p-2">${convertToHindi(tTheoW)}</td>
+                                <td class="border border-black p-2">${convertToHindi(tPracW)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <h3 class="text-lg mb-2 font-bold bg-gray-200 p-1 text-center text-black">أيام الحضور الفعلي شهرياً</h3>
+                    <table class="mb-4 text-center w-full border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-black p-2">م</th>
+                                <th class="border border-black p-2">تاريخ الحضور</th>
+                                <th class="border border-black p-2">اليوم</th>
+                                <th class="border border-black p-2">نظري</th>
+                                <th class="border border-black p-2">عملي</th>
+                                <th class="border border-black p-2">ملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody>${aBody}</tbody>
+                        <tfoot>
+                            <tr class="font-bold bg-gray-200 text-black">
+                                <td colspan="3" class="border border-black p-2">إجمالي الساعات الفعلية</td>
+                                <td class="border border-black p-2">${convertToHindi(tTheoM)}</td>
+                                <td class="border border-black p-2">${convertToHindi(tPracM)}</td>
+                                <td class="border border-black p-2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="mb-6 space-y-1 text-sm font-bold text-black border border-black p-3 rounded bg-gray-50">
+                        <p>إجمالي ساعات المحاضرات الفعلية: <span class="text-black font-bold">${convertToHindi(tTheoM)} - ${spellNumber(tTheoM)}</span> ساعة</p>
+                        <p>إجمالي ساعات العملي/الاشراف الفعلية: <span class="text-black font-bold">${convertToHindi(tPracM)} - ${spellNumber(tPracM)}</span> ساعة</p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 text-center mt-6 pt-4 text-black">
+                        <div>
+                            <h4 class="font-bold mb-6 text-sm text-black">شئون هيئة التدريس</h4>
+                            <p class="font-bold text-black">${sigAffairs}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold mb-6 text-sm text-black">أمين المعهد</h4>
+                            <p class="font-bold text-black">${sigSecretary}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold mb-6 text-sm text-black">عميد المعهد</h4>
+                            <p class="font-bold text-black">${sigDean}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function viewReport(id) {
+            const rec = records.find(r => r.id === id);
+            document.getElementById('printableAreaContainer').innerHTML = generateReportHTML(rec);
+            switchView('report');
+        }
+
+        function printAllReports() {
+            if (records.length === 0) return alert("لا توجد سجلات لطباعتها");
+            
+            let allHtml = '';
+            records.forEach(rec => {
+                allHtml += generateReportHTML(rec);
+            });
+            
+            document.getElementById('printableAreaContainer').innerHTML = allHtml;
+            switchView('report');
+            setTimeout(() => { window.print(); }, 500); // Trigger print automatically
+        }
+
+
+        // --- Database Offline Excel Export / Import Core ---
+        function exportAllExcel() {
+            const wsData = [
+                ["الاسم", "الدرجة", "القسم", "جهة الانتداب", "إجمالي النظري الأسبوعي", "إجمالي العملي الأسبوعي", "Data_JSON", "Settings_JSON"]
+            ];
+
+            if (records.length === 0) {
+                wsData.push(["", "", "", "", "", "", "", JSON.stringify(globalSettings)]);
+            } else {
+                records.forEach((rec, index) => {
+                    const theoW = rec.schedule.reduce((acc, curr) => acc + curr.theo, 0);
+                    const pracW = rec.schedule.reduce((acc, curr) => acc + curr.prac, 0);
+                    const setStr = index === 0 ? JSON.stringify(globalSettings) : "";
+                    wsData.push([rec.name, rec.degree, rec.dept, rec.employer, theoW, pracW, JSON.stringify(rec), setStr]);
+                });
+            }
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            
+            ws['!cols'] = Array(6).fill({wch: 20}); 
+            ws['!cols'].push({hidden: true}); 
+            ws['!cols'].push({hidden: true}); 
+
+            if(!ws['!views']) ws['!views'] = [];
+            ws['!views'].push({ rightToLeft: true });
+
+            XLSX.utils.book_append_sheet(wb, ws, "هيئة التدريس");
+
+            const now = new Date();
+            const shortDate = now.toISOString().split('T')[0]; 
+            const shortTime = String(now.getHours()).padStart(2, '0') + "-" + String(now.getMinutes()).padStart(2, '0');
+            const fileName = `سجلات_هيئة_التدريس_${shortDate}_${shortTime}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+        }
+
+        function handleExcelImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+
+                    let importedRecords = [];
+                    
+                    for (let i = 1; i < rows.length; i++) {
+                        let row = rows[i];
+                        if (!row || row.length === 0) continue;
+
+                        if (row[7] && importedRecords.length === 0) {
+                            try { globalSettings = JSON.parse(row[7]); } catch(err) {}
+                        }
+
+                        if (row[6]) {
+                            importedRecords.push(JSON.parse(row[6]));
+                        } else if (row[0]) {
+                            importedRecords.push({
+                                id: Date.now().toString() + i,
+                                name: row[0] || '',
+                                degree: row[1] || 'مدرس',
+                                dept: row[2] || 'العلوم الاساسية',
+                                employer: row[3] || '',
+                                schedule: [],
+                                dates: [],
+                                additionalDates: {}
+                            });
+                        }
+                    }
+
+                    records = importedRecords;
+                    renderTable();
+                    alert("تم استيراد البيانات والإعدادات بنجاح!");
+                    
+                } catch (error) {
+                    console.error(error);
+                    alert("حدث خطأ أثناء قراءة الملف. تأكد من أنه ملف صالح.");
+                }
+                event.target.value = ""; 
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</body>
+</html>
